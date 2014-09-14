@@ -9,20 +9,57 @@ using namespace std;
 string n_1gram = "1GramFreq.txt";
 string n_2gram = "2GramFreq.txt";
 string n_3gram = "3GramFreq.txt";
+
 string title_1gram = "title_1GramFreq.txt";
 string title_2gram = "title_2GramFreq.txt";
 string testQueriesWithKnownTitle = "testQueriesWithKnownTitle.txt";
 string title_testQueriesWithKnownTitle = "Title_testQueriesWithKnownTitle.txt";
+
+string session_TestQuery = "query_testQuerySession.txt";
+string sid_TestQuery = "sid_testQuerySession.txt";
+string sessionIntentFile = "sessionIntent.txt";
+
 string testFile = "test.txt";
-string resultFile = "result22.txt";
+string resultFile = "result36.txt";
 
 map<int, map<string, double> > table_1Gram;
 map<int, map<int, map<string, double> > > table_2Gram;
 map<int, map<int, map<int, map<string, double> > > > table_3Gram;
-//map<string, vector<string> > queryTitle;
-map<string, string> queryTitle;
+map<string, vector<string> > queryTitle;
+//map<string, string> queryTitle;
 map<int, map<string, double> > table_Title1Gram;
 map<int, map<int, map<string, double> > > table_Title2Gram;
+
+map<int, string> sessionIntent;
+map<string, int> testQuerySession;
+
+void ReadSessionIntent()
+{
+    ifstream fin(sessionIntentFile.c_str());
+    int sid;
+    string s;
+    while(fin>>sid)
+    {
+        getline(fin,s);
+        sessionIntent[sid] = s;
+    }
+    fin.close();
+}
+
+void ReadQuerySid()
+{
+    ifstream finQuery(session_TestQuery.c_str());
+    ifstream finSid(sid_TestQuery.c_str());
+    int sid;
+    string s;
+    while(getline(finQuery,s))
+    {
+        finSid>>sid;
+        testQuerySession[s] = sid;
+    }
+    finQuery.close();
+    finSid.close();
+}
 
 void Read1Grams()
 {
@@ -145,9 +182,9 @@ void SolveTest()
 
         if(queryTitle.find(s) != queryTitle.end())
         {
-            //for(int si = queryTitle[s].size() - 1; si < queryTitle[s].size(); si++)
-            //{
-                string EarlierTitleForThis = queryTitle[s];//[si];
+            for(int si = 0; si < queryTitle[s].size(); si++)
+            {
+                string EarlierTitleForThis = queryTitle[s][si];
 
                 vector<int> titleTokens;
 
@@ -157,6 +194,9 @@ void SolveTest()
                 {
                     titleTokens.push_back(thisTitleToken);
                 }
+
+                if(titleTokens.size() >= 8) // instead try for moving window of 8
+                    continue;
 
                 for(int i = 0; i < titleTokens.size(); i++)
                 {
@@ -185,11 +225,37 @@ void SolveTest()
                         }
                     }
                 }
-            //}
+            }
         }
 
         /************************/
 
+        /**context consideration*/
+
+        if(testQuerySession.find(s) != testQuerySession.end())
+        {
+            int sid = testQuerySession[s];
+            if(sessionIntent.find(sid) != sessionIntent.end())
+            {
+            	vector<string> classes;
+            	string s = sessionIntent[sid];
+            	istringstream sin(s);
+            	string thisClass;
+				while(sin >> thisClass)
+				{
+					if(thisClass[0] == 'C')
+						classes.push_back(thisClass);	
+				}
+				
+				for(int class_i = 0; class_i < classes.size(); class_i++)
+				{
+					probOfThisClass[classes[class_i]] += 0.8;
+                	denom += 0.8;
+				}
+            }
+        }
+
+        /************************/
         map<string, double>::iterator it1;
 
         for(it1 = probOfThisClass.begin(); it1 != probOfThisClass.end(); ++it1)
@@ -236,9 +302,9 @@ void ReadQueryTitle()
     while(getline(finQueries, query))
     {
         getline(finTitle, title);
-        if(queryTitle.find(query) == queryTitle.end())
-            //queryTitle[query].push_back(title);
-        queryTitle[query] = title;
+        //if(queryTitle.find(query) == queryTitle.end())
+        queryTitle[query].push_back(title);
+        //queryTitle[query] = title;
     }
 }
 
@@ -274,6 +340,12 @@ void ReadTitle2Grams()
 
 int main()
 {
+    //Session
+    ReadQuerySid();
+    cout<<"read query->sid\n";
+    ReadSessionIntent();
+    cout<<"read sid->intent\n";
+
     //Title
     ReadQueryTitle();
     cout<<"read query->title\n";
@@ -289,5 +361,6 @@ int main()
     cout<<"read query 2 grams\n";
     Read3Grams();
     cout<<"read query 3 grams\n";
+
     SolveTest();
 }
