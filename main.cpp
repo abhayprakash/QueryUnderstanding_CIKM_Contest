@@ -3,7 +3,7 @@
 #include<sstream>
 #include<map>
 #include<vector>
-
+#include<time.h>
 using namespace std;
 
 string n_1gram = "1GramFreq.txt";
@@ -20,7 +20,7 @@ string sid_TestQuery = "sid_testQuerySession.txt";
 string sessionIntentFile = "sessionIntent.txt";
 
 string testFile = "test.txt";
-string resultFile = "result36.txt";
+string resultFile = "resultQuerySessionAllTitleW8TermWeighted.txt";
 
 map<int, map<string, double> > table_1Gram;
 map<int, map<int, map<string, double> > > table_2Gram;
@@ -195,19 +195,15 @@ void SolveTest()
                     titleTokens.push_back(thisTitleToken);
                 }
 
-                if(titleTokens.size() >= 8) // instead try for moving window of 8
+                if(titleTokens.size() > 8)
                     continue;
 
                 for(int i = 0; i < titleTokens.size(); i++)
                 {
                     for(it = table_Title1Gram[titleTokens[i]].begin(); it != table_Title1Gram[titleTokens[i]].end(); ++it)
                     {
-                        //if(it->second > maxProb)
-                        //{
-                            probOfThisClass[it->first] += it->second;//(probOfThisClass[it->first] * countOfThisClass[it->first]) / (1 + countOfThisClass[it->first]);
-                            denom += it->second;
-                            //countOfThisClass[it->first]++;
-                        //}
+                        probOfThisClass[it->first] += it->second;
+                        denom += it->second;
                     }
                 }
 
@@ -217,11 +213,8 @@ void SolveTest()
                     {
                         for(it = table_Title2Gram[titleTokens[i]][titleTokens[j]].begin(); it != table_Title2Gram[titleTokens[i]][titleTokens[j]].end(); ++it)
                         {
-                            //if(it->second > maxProb)
-                            //{
-                                probOfThisClass[it->first] += it->second;//(probOfThisClass[it->first] * countOfThisClass[it->first]) / (1 + countOfThisClass[it->first]);
-                                denom += it->second;
-                            //}
+                            probOfThisClass[it->first] += it->second;
+                            denom += it->second;
                         }
                     }
                 }
@@ -244,9 +237,9 @@ void SolveTest()
 				while(sin >> thisClass)
 				{
 					if(thisClass[0] == 'C')
-						classes.push_back(thisClass);	
+						classes.push_back(thisClass);
 				}
-				
+
 				for(int class_i = 0; class_i < classes.size(); class_i++)
 				{
 					probOfThisClass[classes[class_i]] += 0.8;
@@ -304,7 +297,6 @@ void ReadQueryTitle()
         getline(finTitle, title);
         //if(queryTitle.find(query) == queryTitle.end())
         queryTitle[query].push_back(title);
-        //queryTitle[query] = title;
     }
 }
 
